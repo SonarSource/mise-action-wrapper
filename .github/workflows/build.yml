@@ -32,3 +32,4 @@ jobs:
         run: |
           mise --version
           shellcheck --version
+          shellcheck scripts/*.sh

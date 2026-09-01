@@ -5,10 +5,11 @@ set -euo pipefail
 : "${ARTIFACTORY_URL:?}" "${ARTIFACTORY_USERNAME:?}" "${ARTIFACTORY_ACCESS_TOKEN:?}" "${GITHUB_ENV:?}"
 
 configure_python_backends() {
-  local authenticated_index registry_url
+  local scheme host_and_path authenticated_index registry_url
 
-  authenticated_index="${ARTIFACTORY_URL%/}/api/pypi/sonarsource-pypi/simple"
-  authenticated_index="https://${ARTIFACTORY_USERNAME}:${ARTIFACTORY_ACCESS_TOKEN}@${authenticated_index#https://}"
+  scheme="${ARTIFACTORY_URL%%://*}"
+  host_and_path="${ARTIFACTORY_URL#*://}"
+  authenticated_index="${scheme}://${ARTIFACTORY_USERNAME}:${ARTIFACTORY_ACCESS_TOKEN}@${host_and_path%/}/api/pypi/sonarsource-pypi/simple"
   registry_url="${authenticated_index%/}/{}/"
 
   echo "::add-mask::${authenticated_index}"
@@ -21,22 +22,23 @@ configure_python_backends() {
 }
 
 configure_npm_backend() {
-  local npm_registry npm_host
+  local npm_registry npm_host host_and_path
 
+  host_and_path="${ARTIFACTORY_URL#*://}"
   npm_registry="${ARTIFACTORY_URL%/}/api/npm/npm"
-  npm_host="${ARTIFACTORY_URL#https:}"
+  npm_host="//${host_and_path}"
 
   cat >> "${HOME}/.npmrc" <<EOF
 registry=${npm_registry}
 ${npm_host}/api/npm/:_authToken=${ARTIFACTORY_ACCESS_TOKEN}
 EOF
+  chmod 600 "${HOME}/.npmrc"
 }
 
 configure_netrc() {
   local repox_host
 
-  repox_host="${ARTIFACTORY_URL#https://}"
-  repox_host="${repox_host#http://}"
+  repox_host="${ARTIFACTORY_URL#*://}"
   repox_host="${repox_host%%/*}"
 
   cat >> "${HOME}/.netrc" <<EOF

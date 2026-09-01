@@ -2,4 +2,4 @@
 lockfile = true
 
 [tools]
-"pipx:shellcheck" = "0.10.0"
+"pipx:shellcheck-py" = "0.10.0.1"

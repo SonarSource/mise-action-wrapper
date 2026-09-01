@@ -2,7 +2,7 @@
 name: Wrapper for jdx/mise-action
 author: SonarSource Engineering XP
 description: |
-  Drop-in replacement for jdx/mise-action with S3-backed mise caching, cache integrity
+  Wrapper for jdx/mise-action with S3-backed mise caching, cache integrity
   checks, pinned versions, and Repox authentication for mise backends.
 branding:
   color: green
@@ -16,7 +16,7 @@ inputs:
     description: If present, this value will be written to (and will override) the mise.toml file before mise runs
     required: false
   mise-version:
-    description: The version of mise to install. Must match the version pinned in jdx/mise-action below.
+    description: The version of mise to install.
     required: false
     default: '2026.3.12'
   repox-url:
@@ -31,6 +31,35 @@ inputs:
     description: URL of Vault used to fetch Artifactory credentials
     required: false
     default: https://vault.sonar.build
+  install:
+    description: If false, will not run mise install
+    required: false
+    default: 'true'
+  install_args:
+    description: Arguments to pass to mise install, such as a tool name to install only that tool
+    required: false
+  working_directory:
+    description: The directory that mise runs in
+    required: false
+  tool_versions:
+    description: If present, this value will be written to the .tool-versions file
+    required: false
+  reshim:
+    description: If true, will run mise reshim --all after setting up mise
+    required: false
+    default: 'false'
+  experimental:
+    description: If true, will use experimental mise features
+    required: false
+    default: 'false'
+  github_token:
+    description: GitHub token for API authentication when installing GitHub-hosted tools
+    required: false
+    default: ${{ github.token }}
+  log_level:
+    description: The log level to use for mise
+    required: false
+    default: info
 runs:
   using: composite
   steps:
@@ -64,12 +93,26 @@ runs:
         ARTIFACTORY_ACCESS_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_ACCESS_TOKEN }}
       run: ${{ github.action_path }}/scripts/configure-repox-for-mise.sh
 
+    - name: Compute mise config digest
+      id: mise-config
+      shell: bash
+      env:
+        MISE_TOML_INPUT: ${{ inputs.mise-toml }}
+      run: |
+        if [[ -n "$MISE_TOML_INPUT" ]]; then
+          digest=$(printf '%s' "$MISE_TOML_INPUT" | sha256sum | cut -d' ' -f1)
+        else
+          digest=$( { cat mise.toml .mise.toml .config/mise/config.toml .tool-versions 2>/dev/null || true; } | sha256sum | cut -d' ' -f1)
+        fi
+        echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
     - name: Restore mise tools cache
       uses: SonarSource/gh-action_cache@v1
       with:
         path: ~/.local/share/mise
-        key: ${{ inputs.cache-key-prefix }}-${{ runner.os }}-${{ hashFiles('mise.toml') }}
+        key: ${{ inputs.cache-key-prefix }}-${{ runner.os }}-${{ inputs.mise-version }}-${{ steps.mise-config.outputs.digest }}
         restore-keys: |
+          ${{ inputs.cache-key-prefix }}-${{ runner.os }}-${{ inputs.mise-version }}-
           ${{ inputs.cache-key-prefix }}-${{ runner.os }}-
 
     - name: Validate mise cache integrity
@@ -87,9 +130,12 @@ runs:
         # mise-action downloads the correct version from the direct URL instead of calling
         # `mise self-update` (which requires GitHub API access that may be blocked on private runners).
         MISE_BIN=~/.local/share/mise/bin/mise
-        if [ -f "$MISE_BIN" ] && ! "$MISE_BIN" --version 2>/dev/null | grep -qF "$MISE_VERSION"; then
-          echo "Cached mise $("$MISE_BIN" --version 2>/dev/null || echo 'unknown') does not match requested $MISE_VERSION — removing to force clean install."
-          rm -rf ~/.local/share/mise/bin
+        if [ -f "$MISE_BIN" ]; then
+          cached_version=$("$MISE_BIN" --version 2>/dev/null | awk '{print $1}' || echo unknown)
+          if [ "$cached_version" != "$MISE_VERSION" ]; then
+            echo "Cached mise $cached_version does not match requested $MISE_VERSION — removing to force clean install."
+            rm -rf ~/.local/share/mise/bin
+          fi
         fi
 
     - name: Install mise tools
@@ -98,3 +144,11 @@ runs:
         version: ${{ inputs.mise-version }}
         cache: false
         mise_toml: ${{ inputs.mise-toml }}
+        install: ${{ inputs.install }}
+        install_args: ${{ inputs.install_args }}
+        working_directory: ${{ inputs.working_directory }}
+        tool_versions: ${{ inputs.tool_versions }}
+        reshim: ${{ inputs.reshim }}
+        experimental: ${{ inputs.experimental }}
+        github_token: ${{ inputs.github_token }}
+        log_level: ${{ inputs.log_level }}
