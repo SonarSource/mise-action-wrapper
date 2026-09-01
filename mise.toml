@@ -1,0 +1,5 @@
+[settings]
+lockfile = true
+
+[tools]
+"pipx:shellcheck" = "0.10.0"

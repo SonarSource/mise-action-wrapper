@@ -1,0 +1,100 @@
+---
+name: Wrapper for jdx/mise-action
+author: SonarSource Engineering XP
+description: |
+  Drop-in replacement for jdx/mise-action with S3-backed mise caching, cache integrity
+  checks, pinned versions, and Repox authentication for mise backends.
+branding:
+  color: green
+  icon: package
+inputs:
+  cache-key-prefix:
+    description: Prefix for the cache key. Use different prefixes when multiple workflows install different tool sets to avoid cache collisions.
+    required: false
+    default: mise
+  mise-toml:
+    description: If present, this value will be written to (and will override) the mise.toml file before mise runs
+    required: false
+  mise-version:
+    description: The version of mise to install. Must match the version pinned in jdx/mise-action below.
+    required: false
+    default: '2026.3.12'
+  repox-url:
+    description: URL for Repox
+    required: false
+    default: https://repox.jfrog.io
+  artifactory-reader-role:
+    description: Suffix for the Artifactory reader role in Vault. Defaults to public-reader for public repositories and private-reader for private repositories.
+    required: false
+    default: ''
+  vault-url:
+    description: URL of Vault used to fetch Artifactory credentials
+    required: false
+    default: https://vault.sonar.build
+runs:
+  using: composite
+  steps:
+    - name: Set Artifactory reader role
+      shell: bash
+      env:
+        INPUT_ROLE: ${{ inputs.artifactory-reader-role }}
+      run: |
+        if [[ -n "$INPUT_ROLE" ]]; then
+          echo "ARTIFACTORY_READER_ROLE=$INPUT_ROLE" >> "$GITHUB_ENV"
+        elif [[ "${{ github.event.repository.visibility }}" == "public" ]]; then
+          echo "ARTIFACTORY_READER_ROLE=public-reader" >> "$GITHUB_ENV"
+        else
+          echo "ARTIFACTORY_READER_ROLE=private-reader" >> "$GITHUB_ENV"
+        fi
+
+    - name: Fetch Artifactory credentials
+      id: secrets
+      uses: SonarSource/vault-action-wrapper@v3
+      with:
+        url: ${{ inputs.vault-url }}
+        secrets: |
+          development/artifactory/token/{REPO_OWNER_NAME_DASH}-${{ env.ARTIFACTORY_READER_ROLE }} username | ARTIFACTORY_USERNAME;
+          development/artifactory/token/{REPO_OWNER_NAME_DASH}-${{ env.ARTIFACTORY_READER_ROLE }} access_token | ARTIFACTORY_ACCESS_TOKEN;
+
+    - name: Configure Repox for mise
+      shell: bash
+      env:
+        ARTIFACTORY_URL: ${{ format('{0}/artifactory', inputs.repox-url) }}
+        ARTIFACTORY_USERNAME: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_USERNAME }}
+        ARTIFACTORY_ACCESS_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_ACCESS_TOKEN }}
+      run: ${{ github.action_path }}/scripts/configure-repox-for-mise.sh
+
+    - name: Restore mise tools cache
+      uses: SonarSource/gh-action_cache@v1
+      with:
+        path: ~/.local/share/mise
+        key: ${{ inputs.cache-key-prefix }}-${{ runner.os }}-${{ hashFiles('mise.toml') }}
+        restore-keys: |
+          ${{ inputs.cache-key-prefix }}-${{ runner.os }}-
+
+    - name: Validate mise cache integrity
+      shell: bash
+      env:
+        MISE_VERSION: ${{ inputs.mise-version }}
+      run: |
+        # If the cache restore produced a broken mise directory, wipe it so mise-action
+        # installs cleanly instead of inheriting a partially-extracted state.
+        if [ -d ~/.local/share/mise ] && ! ~/.local/share/mise/bin/mise --version &>/dev/null; then
+          echo "Mise cache appears corrupt or incomplete — removing to force clean install."
+          rm -rf ~/.local/share/mise
+        fi
+        # If the cached mise binary version doesn't match the requested version, wipe it so
+        # mise-action downloads the correct version from the direct URL instead of calling
+        # `mise self-update` (which requires GitHub API access that may be blocked on private runners).
+        MISE_BIN=~/.local/share/mise/bin/mise
+        if [ -f "$MISE_BIN" ] && ! "$MISE_BIN" --version 2>/dev/null | grep -qF "$MISE_VERSION"; then
+          echo "Cached mise $("$MISE_BIN" --version 2>/dev/null || echo 'unknown') does not match requested $MISE_VERSION — removing to force clean install."
+          rm -rf ~/.local/share/mise/bin
+        fi
+
+    - name: Install mise tools
+      uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      with:
+        version: ${{ inputs.mise-version }}
+        cache: false
+        mise_toml: ${{ inputs.mise-toml }}
