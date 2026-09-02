@@ -10,7 +10,8 @@ configure_python_backends() {
   scheme="${ARTIFACTORY_URL%%://*}"
   host_and_path="${ARTIFACTORY_URL#*://}"
   authenticated_index="${scheme}://${ARTIFACTORY_USERNAME}:${ARTIFACTORY_ACCESS_TOKEN}@${host_and_path%/}/api/pypi/sonarsource-pypi/simple"
-  registry_url="${authenticated_index%/}/{}/"
+  # mise parses pipx.registry_url as PyPI JSON metadata, not a PEP 503 index.
+  registry_url="${scheme}://${ARTIFACTORY_USERNAME}:${ARTIFACTORY_ACCESS_TOKEN}@${host_and_path%/}/api/pypi/sonarsource-pypi/pypi/{}/json"
 
   echo "::add-mask::${authenticated_index}"
   echo "::add-mask::${registry_url}"

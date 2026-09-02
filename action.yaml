@@ -98,12 +98,15 @@ runs:
       shell: bash
       env:
         MISE_TOML_INPUT: ${{ inputs.mise-toml }}
+        TOOL_VERSIONS_INPUT: ${{ inputs.tool_versions }}
+        WORKDIR: ${{ inputs.working_directory }}
       run: |
-        if [[ -n "$MISE_TOML_INPUT" ]]; then
-          digest=$(printf '%s' "$MISE_TOML_INPUT" | sha256sum | cut -d' ' -f1)
-        else
-          digest=$( { cat mise.toml .mise.toml .config/mise/config.toml .tool-versions 2>/dev/null || true; } | sha256sum | cut -d' ' -f1)
-        fi
+        cd "${WORKDIR:-.}"
+        digest=$( {
+          printf '%s\n%s\n' "$MISE_TOML_INPUT" "$TOOL_VERSIONS_INPUT"
+          cat mise.toml mise.local.toml .mise.toml .mise/config.toml \
+              .config/mise/config.toml .tool-versions 2>/dev/null || true
+        } | sha256sum | cut -d' ' -f1)
         echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
     - name: Restore mise tools cache
