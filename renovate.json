@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>SonarSource/renovate-config"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Bump the mise version pinned as the mise-version input default",
+      "managerFilePatterns": ["/(^|/)action\\.ya?ml$/", "/(^|/)README\\.md$/"],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "jdx/mise",
+      "depNameTemplate": "mise",
+      "matchStrings": [
+        "mise-version:\\n(?:\\s+[^\\n]*\\n)*?\\s*default:\\s*'(?<currentValue>[\\d.]+)'",
+        "\\|\\s*`mise-version`\\s*\\|\\s*`(?<currentValue>[\\d.]+)`"
+      ],
+      "extractVersionTemplate": "^v(?<version>.*)$",
+      "versioningTemplate": "regex:^(?<major>\\d{4})\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    }
+  ]
+}
