@@ -1,5 +1,7 @@
 [settings]
 lockfile = true
 
+# Dogfood: pipx:shellcheck-py is a PyPI package so CI exercises mise install through Repox.
+# aqua/github/asdf ShellCheck would skip that path.
 [tools]
 "pipx:shellcheck-py" = "0.10.0.1"

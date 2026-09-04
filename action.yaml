@@ -104,7 +104,7 @@ runs:
         cd "${WORKDIR:-.}"
         digest=$( {
           printf '%s\n%s\n' "$MISE_TOML_INPUT" "$TOOL_VERSIONS_INPUT"
-          cat mise.toml mise.local.toml .mise.toml .mise/config.toml \
+          cat mise.toml mise.lock mise.local.toml .mise.toml .mise/config.toml \
               .config/mise/config.toml .tool-versions 2>/dev/null || true
         } | sha256sum | cut -d' ' -f1)
         echo "digest=$digest" >> "$GITHUB_OUTPUT"
