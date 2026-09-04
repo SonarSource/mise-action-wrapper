@@ -38,7 +38,7 @@ Caching is handled by this wrapper (`cache: false` is always passed through to
 |-------|---------|-------------|
 | `cache-key-prefix` | `mise` | Prefix for the S3/GitHub cache key |
 | `mise-toml` | _(empty)_ | Optional `mise.toml` content written before install |
-| `mise-version` | `2026.3.12` | Pinned mise version installed by the wrapper |
+| `mise-version` | `2026.8.15` | Pinned mise version installed by the wrapper |
 | `repox-url` | `https://repox.jfrog.io` | Repox base URL |
 | `artifactory-reader-role` | _(auto)_ | Vault Artifactory role suffix (`public-reader` / `private-reader`) |
 | `vault-url` | `https://vault.sonar.build` | Vault URL for credential fetch |

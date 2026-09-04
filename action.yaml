@@ -18,7 +18,7 @@ inputs:
   mise-version:
     description: The version of mise to install.
     required: false
-    default: '2026.3.12'
+    default: '2026.8.15'
   repox-url:
     description: URL for Repox
     required: false

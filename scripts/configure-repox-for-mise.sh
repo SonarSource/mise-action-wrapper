@@ -10,8 +10,8 @@ configure_python_backends() {
   scheme="${ARTIFACTORY_URL%%://*}"
   host_and_path="${ARTIFACTORY_URL#*://}"
   authenticated_index="${scheme}://${ARTIFACTORY_USERNAME}:${ARTIFACTORY_ACCESS_TOKEN}@${host_and_path%/}/api/pypi/sonarsource-pypi/simple"
-  # mise parses pipx.registry_url as PyPI JSON metadata, not a PEP 503 index.
-  registry_url="${scheme}://${ARTIFACTORY_USERNAME}:${ARTIFACTORY_ACCESS_TOKEN}@${host_and_path%/}/api/pypi/sonarsource-pypi/pypi/{}/json"
+  # mise derives PIP_INDEX_URL from this URL; Artifactory's JSON API does not convert to a valid simple index, so pipx installs fail.
+  registry_url="${authenticated_index}/{}/"
 
   echo "::add-mask::${authenticated_index}"
   echo "::add-mask::${registry_url}"
