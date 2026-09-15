@@ -19,6 +19,10 @@ configure_python_backends() {
     echo "PIP_INDEX_URL=${authenticated_index}"
     echo "UV_DEFAULT_INDEX=${authenticated_index}"
     echo "MISE_PIPX_REGISTRY_URL=${registry_url}"
+    # Registry default for `poetry` is vfox (install.python-poetry.org → pypi.org).
+    # Force pipx so installs use PIP_INDEX_URL / MISE_PIPX_REGISTRY_URL (Repox).
+    # https://mise.jdx.dev/registry.html#environment-variable-overrides
+    echo "MISE_BACKENDS_POETRY=pipx:poetry"
   } >> "$GITHUB_ENV"
 }
 

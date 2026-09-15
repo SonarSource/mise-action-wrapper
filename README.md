@@ -8,6 +8,8 @@ This wrapper centralises:
 - S3-backed caching via [`SonarSource/gh-action_cache`](https://github.com/SonarSource/gh-action_cache)
 - Cache integrity validation (corrupt restore / version mismatch recovery)
 - Repox authentication for mise backends (`pipx`, `uv`, `npm`, Maven)
+- Poetry short name forced onto `pipx:poetry` so installs go through Repox, not
+  the vfox installer that contacts PyPI
 
 ## Usage
 
@@ -27,10 +29,10 @@ With a custom cache prefix when multiple jobs install different tool sets:
     cache-key-prefix: mise-qa
 ```
 
-Caching is handled by this wrapper (`cache: false` is always passed through to
-`jdx/mise-action`). Forwarded `jdx/mise-action` inputs: `install`,
-`install_args`, `working_directory`, `tool_versions`, `reshim`, `experimental`,
-`github_token`, `log_level`, and `mise_toml` (as `mise-toml`).
+Caching is handled by this wrapper (`cache: false` is always passed through to `jdx/mise-action`). The cache key includes a version segment
+(bumped when cache semantics change) so prefix `restore-keys` cannot revive older entries. Forwarded `jdx/mise-action` inputs: `install`,
+`install_args`, `working_directory`, `tool_versions`, `reshim`, `experimental`, `github_token`, `log_level`, and `mise_toml` (as
+`mise-toml`).
 
 ## Inputs
 
@@ -55,18 +57,36 @@ Caching is handled by this wrapper (`cache: false` is always passed through to
 
 The wrapper always:
 
-1. Fetches Artifactory credentials via
-   [`SonarSource/vault-action-wrapper@v3`](https://github.com/SonarSource/vault-action-wrapper)
-2. Exports Python index env vars
-   (`PIP_INDEX_URL`, `UV_DEFAULT_INDEX`, `MISE_PIPX_REGISTRY_URL`)
-3. Writes `~/.npmrc` for the npm backend
-4. Writes `~/.netrc` and `MISE_URL_REPLACEMENTS` so mise HTTP downloads from
-   Maven Central go through Repox (`/maven2/` stripped to match Artifactory layout)
+1. Fetches Artifactory credentials via [`SonarSource/vault-action-wrapper@v3`](https://github.com/SonarSource/vault-action-wrapper)
+2. Exports Python index env vars (`PIP_INDEX_URL`, `UV_DEFAULT_INDEX`, `MISE_PIPX_REGISTRY_URL`)
+3. Forces the `poetry` short name onto the pipx backend (`MISE_BACKENDS_POETRY=pipx:poetry`) so `poetry = "…"` in `mise.toml` does not use
+   mise’s default vfox plugin (which curls `install.python-poetry.org` and looks up `pypi.org/pypi/poetry/json`)
+4. Writes `~/.npmrc` for the npm backend
+5. Writes `~/.netrc` and `MISE_URL_REPLACEMENTS` so mise HTTP downloads from Maven Central go through Repox (`/maven2/` stripped to match
+   Artifactory layout)
 
-You do **not** need to run `config-pip` before mise for tools installed through
-mise (`pipx:`, `uv`, etc.). Keep using
-[`config-pip`](https://github.com/SonarSource/ci-github-actions/tree/master/config-pip)
-for `setup-python`, standalone `pip`, or `pipx` that do not go through mise.
+You do **not** need to run `config-pip` before mise for tools installed through mise (`pipx:`, `uv`, `poetry`, etc.). Keep using
+[`config-pip`](https://github.com/SonarSource/ci-github-actions/tree/master/config-pip) for `setup-python`, standalone `pip`, or `pipx` that
+do not go through mise.
+
+### Poetry backend
+
+Mise’s registry prefers [`vfox:mise-plugins/vfox-poetry`](https://github.com/mise-plugins/vfox-poetry)
+over `pipx:poetry`. That plugin fetches `install.python-poetry.org` and resolves versions via
+`pypi.org/pypi/poetry/json`, so the install still reaches the public internet even with
+`PIP_INDEX_URL` set. This wrapper
+overrides it with [`MISE_BACKENDS_POETRY`](https://mise.jdx.dev/registry.html#environment-variable-overrides)
+so both of these install Poetry from Repox:
+
+```toml
+[tools]
+python = "3.13"
+poetry = "2.2.1"        # rewritten to pipx:poetry
+"pipx:poetry" = "2.2.1" # explicit; same backend
+```
+
+pipx needs a Python interpreter on `PATH`. Declare `python` in the same `mise.toml` (or ensure the runner already has one). vfox-only
+options such as `pyproject` auto-venv / `MISE_POETRY_VENV_AUTO` do not apply on this path.
 
 ## Requirements
 
