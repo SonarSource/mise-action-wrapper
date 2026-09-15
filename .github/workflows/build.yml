@@ -27,6 +27,13 @@ jobs:
       - name: Install tools using mise wrapper
         uses: ./
 
+      - name: Validate poetry came from the pipx backend
+        shell: bash
+        run: |
+          poetry --version
+          mise which poetry
+          test -d ~/.local/share/mise/installs/poetry
+
       - name: Validate mise and pipx tool
         shell: bash
         run: |
