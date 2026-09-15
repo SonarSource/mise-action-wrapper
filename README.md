@@ -71,9 +71,12 @@ do not go through mise.
 
 ### Poetry backend
 
-Mise’s registry prefers [`vfox:mise-plugins/vfox-poetry`](https://github.com/mise-plugins/vfox-poetry) over `pipx:poetry`. That installer
-ignores `PIP_INDEX_URL`. This wrapper overrides it with
-[`MISE_BACKENDS_POETRY`](https://mise.jdx.dev/registry.html#environment-variable-overrides) so both of these install Poetry from Repox:
+Mise’s registry prefers [`vfox:mise-plugins/vfox-poetry`](https://github.com/mise-plugins/vfox-poetry)
+over `pipx:poetry`. That plugin fetches `install.python-poetry.org` and resolves versions via
+`pypi.org/pypi/poetry/json`, so the install still reaches the public internet even with
+`PIP_INDEX_URL` set. This wrapper
+overrides it with [`MISE_BACKENDS_POETRY`](https://mise.jdx.dev/registry.html#environment-variable-overrides)
+so both of these install Poetry from Repox:
 
 ```toml
 [tools]
