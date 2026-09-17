@@ -40,3 +40,26 @@ jobs:
           mise --version
           shellcheck --version
           shellcheck scripts/*.sh
+
+  # Dogfood the composite action on Windows. github.action_path uses backslashes
+  # there, and interpolating it into a bash run: line fails.
+  build-windows:
+    runs-on: warp-custom-windows-2022-m
+    name: Build (Windows)
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install tools using mise wrapper
+        uses: ./
+
+      - name: Validate wrapper ran on Windows
+        shell: bash
+        run: |
+          mise --version
+          poetry --version
+          shellcheck --version
+          shellcheck scripts/*.sh

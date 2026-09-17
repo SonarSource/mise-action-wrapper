@@ -91,7 +91,10 @@ runs:
         ARTIFACTORY_URL: ${{ format('{0}/artifactory', inputs.repox-url) }}
         ARTIFACTORY_USERNAME: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_USERNAME }}
         ARTIFACTORY_ACCESS_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_ACCESS_TOKEN }}
-      run: ${{ github.action_path }}/scripts/configure-repox-for-mise.sh
+      # GITHUB_ACTION_PATH keeps backslashes as data. github.action_path interpolated
+      # into bash source is parsed as escapes (C:\a\_actions\... → C:a_actions...).
+      run: |
+        "${GITHUB_ACTION_PATH//\\//}/scripts/configure-repox-for-mise.sh"
 
     - name: Compute mise config digest
       id: mise-config
