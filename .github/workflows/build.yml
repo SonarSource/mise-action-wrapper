@@ -64,6 +64,9 @@ jobs:
 
       - name: Validate wrapper ran on Windows
         shell: bash
+        env:
+          # python --version otherwise auto-installs the rest of mise.toml (poetry / pipx tools).
+          MISE_NOT_FOUND_AUTOINSTALL: "false"
         run: |
           mise --version
           python --version
