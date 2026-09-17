@@ -67,3 +67,6 @@ jobs:
         run: |
           mise --version
           test -n "${PIP_INDEX_URL:-}"
+          # Provenance: python came from mise, not the runner image. Do not run
+          # python/mise exec — that auto-installs the rest of mise.toml (pipx).
+          test -d "${MISE_DATA_DIR//\\//}/installs/python"
