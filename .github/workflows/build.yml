@@ -40,3 +40,33 @@ jobs:
           mise --version
           shellcheck --version
           shellcheck scripts/*.sh
+
+  # Dogfood the composite action on Windows. github.action_path uses backslashes
+  # there, and interpolating it into a bash run: line fails.
+  build-windows:
+    runs-on: warp-custom-windows-2022-m
+    name: Build (Windows)
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # This repo's mise.toml installs pipx: tools. Warp Windows does not have
+      # pipx on PATH, so a full `mise install` fails after the path fix.
+      # Installing python only still runs Configure Repox (the original failure)
+      # and proves mise itself works on this runner.
+      - name: Install tools using mise wrapper
+        uses: ./
+        with:
+          install_args: python
+
+      - name: Validate wrapper ran on Windows
+        shell: bash
+        run: |
+          mise --version
+          test -n "${PIP_INDEX_URL:-}"
+          # Provenance: python came from mise, not the runner image. Do not run
+          # python/mise exec — that auto-installs the rest of mise.toml (pipx).
+          test -d "${MISE_DATA_DIR//\\//}/installs/python"
