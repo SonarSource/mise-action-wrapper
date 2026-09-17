@@ -112,10 +112,25 @@ runs:
         } | sha256sum | cut -d' ' -f1)
         echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
+    - name: Resolve mise data directory
+      id: mise-dir
+      shell: bash
+      run: |
+        # jdx/mise-action and mise.exe use %LOCALAPPDATA%\mise on Windows, not
+        # ~/.local/share/mise. Export the same path so cache restore, integrity
+        # checks, and mise-action share one location.
+        if [[ "${RUNNER_OS}" == "Windows" ]]; then
+          dir="${LOCALAPPDATA//\\//}/mise"
+        else
+          dir="${HOME}/.local/share/mise"
+        fi
+        echo "dir=${dir}" >> "$GITHUB_OUTPUT"
+        echo "MISE_DATA_DIR=${dir}" >> "$GITHUB_ENV"
+
     - name: Restore mise tools cache
       uses: SonarSource/gh-action_cache@v1
       with:
-        path: ~/.local/share/mise
+        path: ${{ steps.mise-dir.outputs.dir }}
         key: ${{ inputs.cache-key-prefix }}-v1-${{ runner.os }}-${{ inputs.mise-version }}-${{ steps.mise-config.outputs.digest }}
         restore-keys: |
           ${{ inputs.cache-key-prefix }}-v1-${{ runner.os }}-${{ inputs.mise-version }}-
@@ -126,21 +141,26 @@ runs:
       env:
         MISE_VERSION: ${{ inputs.mise-version }}
       run: |
+        MISE_HOME="${MISE_DATA_DIR//\\//}"
+        if [[ "${RUNNER_OS}" == "Windows" ]]; then
+          MISE_BIN="${MISE_HOME}/bin/mise.exe"
+        else
+          MISE_BIN="${MISE_HOME}/bin/mise"
+        fi
         # If the cache restore produced a broken mise directory, wipe it so mise-action
         # installs cleanly instead of inheriting a partially-extracted state.
-        if [ -d ~/.local/share/mise ] && ! ~/.local/share/mise/bin/mise --version &>/dev/null; then
+        if [ -d "$MISE_HOME" ] && ! "$MISE_BIN" --version &>/dev/null; then
           echo "Mise cache appears corrupt or incomplete — removing to force clean install."
-          rm -rf ~/.local/share/mise
+          rm -rf "$MISE_HOME"
         fi
         # If the cached mise binary version doesn't match the requested version, wipe it so
         # mise-action downloads the correct version from the direct URL instead of calling
         # `mise self-update` (which requires GitHub API access that may be blocked on private runners).
-        MISE_BIN=~/.local/share/mise/bin/mise
         if [ -f "$MISE_BIN" ]; then
           cached_version=$("$MISE_BIN" --version 2>/dev/null | awk '{print $1}' || echo unknown)
           if [ "$cached_version" != "$MISE_VERSION" ]; then
             echo "Cached mise $cached_version does not match requested $MISE_VERSION — removing to force clean install."
-            rm -rf ~/.local/share/mise/bin
+            rm -rf "${MISE_HOME}/bin"
           fi
         fi
 
