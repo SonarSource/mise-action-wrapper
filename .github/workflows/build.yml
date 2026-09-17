@@ -53,13 +53,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      # This repo's mise.toml installs pipx: tools. Warp Windows does not have
+      # pipx on PATH, so a full `mise install` fails after the path fix.
+      # Installing python only still runs Configure Repox (the original failure)
+      # and proves mise itself works on this runner.
       - name: Install tools using mise wrapper
         uses: ./
+        with:
+          install_args: python
 
       - name: Validate wrapper ran on Windows
         shell: bash
         run: |
           mise --version
-          poetry --version
-          shellcheck --version
-          shellcheck scripts/*.sh
+          python --version
+          test -n "${PIP_INDEX_URL:-}"
