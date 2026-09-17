@@ -91,9 +91,12 @@ runs:
         ARTIFACTORY_URL: ${{ format('{0}/artifactory', inputs.repox-url) }}
         ARTIFACTORY_USERNAME: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_USERNAME }}
         ARTIFACTORY_ACCESS_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_ACCESS_TOKEN }}
-      # GITHUB_ACTION_PATH keeps backslashes as data. github.action_path interpolated
-      # into bash source is parsed as escapes (C:\a\_actions\... → C:a_actions...).
       run: |
+        echo "GITHUB_ACTION_PATH=$GITHUB_ACTION_PATH"
+        echo "github.action_path=${{ github.action_path }}"
+        # Use the env var, not github.action_path: interpolating the template
+        # into bash source eats Windows backslashes (C:\a\_actions\... →
+        # C:a_actions...). Slash-normalize is Git Bash convenience, not the fix.
         "${GITHUB_ACTION_PATH//\\//}/scripts/configure-repox-for-mise.sh"
 
     - name: Compute mise config digest
@@ -119,6 +122,8 @@ runs:
         # jdx/mise-action and mise.exe use %LOCALAPPDATA%\mise on Windows, not
         # ~/.local/share/mise. Export the same path so cache restore, integrity
         # checks, and mise-action share one location.
+        # Slash-normalize: this value is also gh-action_cache's path: input,
+        # which is slash-sensitive on Windows.
         if [[ "${RUNNER_OS}" == "Windows" ]]; then
           dir="${LOCALAPPDATA//\\//}/mise"
         else
