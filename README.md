@@ -29,8 +29,9 @@ With a custom cache prefix when multiple jobs install different tool sets:
     cache-key-prefix: mise-qa
 ```
 
-Caching is handled by this wrapper (`cache: false` is always passed through to `step-security/mise-action`). The cache key includes a version segment
-(bumped when cache semantics change) so prefix `restore-keys` cannot revive older entries. Forwarded `step-security/mise-action` inputs: `install`,
+Caching is handled by this wrapper (`cache: false` is always passed through to `step-security/mise-action`).
+The cache key includes a version segment (bumped when cache semantics change) so prefix `restore-keys` cannot revive older entries.
+Forwarded `step-security/mise-action` inputs: `install`,
 `install_args`, `working_directory`, `tool_versions`, `reshim`, `experimental`, `github_token`, `log_level`, and `mise_toml` (as
 `mise-toml`).
 
