@@ -1,10 +1,10 @@
 # mise-action-wrapper
 
-Wrapper for [`jdx/mise-action`](https://github.com/jdx/mise-action) within SonarSource CI.
+Wrapper for [`step-security/mise-action`](https://github.com/step-security/mise-action) within SonarSource CI.
 
 This wrapper centralises:
 
-- Pinned `jdx/mise-action` and `mise` versions
+- Pinned `step-security/mise-action` and `mise` versions
 - S3-backed caching via [`SonarSource/gh-action_cache`](https://github.com/SonarSource/gh-action_cache)
 - Cache integrity validation (corrupt restore / version mismatch recovery)
 - Repox authentication for mise backends (`pipx`, `uv`, `npm`, Maven)
@@ -13,7 +13,7 @@ This wrapper centralises:
 
 ## Usage
 
-Replace direct `jdx/mise-action` usage for typical install-from-config jobs:
+Replace a direct mise-action install for typical install-from-config jobs:
 
 ```yaml
 - name: Install tools using mise
@@ -29,8 +29,9 @@ With a custom cache prefix when multiple jobs install different tool sets:
     cache-key-prefix: mise-qa
 ```
 
-Caching is handled by this wrapper (`cache: false` is always passed through to `jdx/mise-action`). The cache key includes a version segment
-(bumped when cache semantics change) so prefix `restore-keys` cannot revive older entries. Forwarded `jdx/mise-action` inputs: `install`,
+Caching is handled by this wrapper (`cache: false` is always passed through to `step-security/mise-action`).
+The cache key includes a version segment (bumped when cache semantics change) so prefix `restore-keys` cannot revive older entries.
+Forwarded `step-security/mise-action` inputs: `install`,
 `install_args`, `working_directory`, `tool_versions`, `reshim`, `experimental`, `github_token`, `log_level`, and `mise_toml` (as
 `mise-toml`).
 
