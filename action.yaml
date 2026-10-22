@@ -1,8 +1,8 @@
 ---
-name: Wrapper for jdx/mise-action
+name: Wrapper for step-security/mise-action
 author: SonarSource Engineering XP
 description: |
-  Wrapper for jdx/mise-action with S3-backed mise caching, cache integrity
+  Wrapper for step-security/mise-action with S3-backed mise caching, cache integrity
   checks, pinned versions, and Repox authentication for mise backends.
 branding:
   color: green
@@ -119,7 +119,7 @@ runs:
       id: mise-dir
       shell: bash
       run: |
-        # jdx/mise-action and mise.exe use %LOCALAPPDATA%\mise on Windows, not
+        # step-security/mise-action and mise.exe use %LOCALAPPDATA%\mise on Windows, not
         # ~/.local/share/mise. Export the same path so cache restore, integrity
         # checks, and mise-action share one location.
         # Slash-normalize: this value is also gh-action_cache's path: input,
@@ -170,7 +170,7 @@ runs:
         fi
 
     - name: Install mise tools
-      uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      uses: step-security/mise-action@c7396e2a2a4ad1ea43abee3317d964292da354ae # v4.0.1
       with:
         version: ${{ inputs.mise-version }}
         cache: false
