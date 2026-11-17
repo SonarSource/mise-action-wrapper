@@ -140,9 +140,9 @@ runs:
       uses: SonarSource/gh-action_cache@v1
       with:
         path: ${{ steps.mise-dir.outputs.dir }}
-        key: ${{ inputs.cache-key-prefix }}-v1-${{ runner.os }}-${{ inputs.mise-version }}-${{ steps.mise-config.outputs.digest }}
+        key: ${{ inputs.cache-key-prefix }}-v2-${{ runner.os }}-${{ inputs.mise-version }}-${{ steps.mise-config.outputs.digest }}
         restore-keys: |
-          ${{ inputs.cache-key-prefix }}-v1-${{ runner.os }}-${{ inputs.mise-version }}-
+          ${{ inputs.cache-key-prefix }}-v2-${{ runner.os }}-${{ inputs.mise-version }}-
 
     - name: Validate mise cache integrity
       shell: bash
