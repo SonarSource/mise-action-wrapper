@@ -31,9 +31,11 @@ With a custom cache prefix when multiple jobs install different tool sets:
 
 Caching is handled by this wrapper (`cache: false` is always passed through to `step-security/mise-action`).
 The cache key includes a version segment (bumped when cache semantics change) so prefix `restore-keys` cannot revive older entries.
+Restore keys never cross mise versions: tools installed by another mise version can be listed as installed
+while their binaries are missing from `PATH`.
 Forwarded `step-security/mise-action` inputs: `install`,
-`install_args`, `working_directory`, `tool_versions`, `reshim`, `experimental`, `github_token`, `log_level`, and `mise_toml` (as
-`mise-toml`).
+`install_args`, `working_directory`, `tool_versions`, `reshim`, `experimental`, `github_token`, `log_level`,
+`persist_github_token`, and `mise_toml` (as `mise-toml`).
 
 ## Inputs
 
@@ -53,6 +55,7 @@ Forwarded `step-security/mise-action` inputs: `install`,
 | `experimental` | `false` | Enable experimental mise features |
 | `github_token` | `${{ github.token }}` | Token for GitHub-hosted tool downloads |
 | `log_level` | `info` | mise log level |
+| `persist_github_token` | `true` | Export `MISE_GITHUB_TOKEN` to later steps of the job |
 
 ## Repox behaviour
 

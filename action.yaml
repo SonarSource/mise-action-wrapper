@@ -60,6 +60,10 @@ inputs:
     description: The log level to use for mise
     required: false
     default: info
+  persist_github_token:
+    description: If true, export MISE_GITHUB_TOKEN to later steps of the job so they can call the GitHub API authenticated
+    required: false
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -136,10 +140,9 @@ runs:
       uses: SonarSource/gh-action_cache@v1
       with:
         path: ${{ steps.mise-dir.outputs.dir }}
-        key: ${{ inputs.cache-key-prefix }}-v1-${{ runner.os }}-${{ inputs.mise-version }}-${{ steps.mise-config.outputs.digest }}
+        key: ${{ inputs.cache-key-prefix }}-v2-${{ runner.os }}-${{ inputs.mise-version }}-${{ steps.mise-config.outputs.digest }}
         restore-keys: |
-          ${{ inputs.cache-key-prefix }}-v1-${{ runner.os }}-${{ inputs.mise-version }}-
-          ${{ inputs.cache-key-prefix }}-v1-${{ runner.os }}-
+          ${{ inputs.cache-key-prefix }}-v2-${{ runner.os }}-${{ inputs.mise-version }}-
 
     - name: Validate mise cache integrity
       shell: bash
@@ -170,7 +173,7 @@ runs:
         fi
 
     - name: Install mise tools
-      uses: step-security/mise-action@c7396e2a2a4ad1ea43abee3317d964292da354ae # v4.0.1
+      uses: step-security/mise-action@a225bbd7c202ddf57dd76dff22bb7992f6314173 # v5.1.2
       with:
         version: ${{ inputs.mise-version }}
         cache: false
@@ -183,3 +186,4 @@ runs:
         experimental: ${{ inputs.experimental }}
         github_token: ${{ inputs.github_token }}
         log_level: ${{ inputs.log_level }}
+        persist_github_token: ${{ inputs.persist_github_token }}
