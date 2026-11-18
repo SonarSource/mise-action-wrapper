@@ -25,7 +25,19 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install tools using mise wrapper
+        id: mise
         uses: ./
+
+      - name: Validate mise version and outputs
+        shell: bash
+        env:
+          CACHE_HIT: ${{ steps.mise.outputs.cache-hit }}
+          VERSIONS: ${{ steps.mise.outputs.versions }}
+        run: |
+          expected=$(yq '.inputs.version.default' action.yaml)
+          test "$(mise --version | awk '{print $1}')" = "$expected"
+          [[ "$CACHE_HIT" == "true" || "$CACHE_HIT" == "false" ]]
+          yq -p=json -e '.python' <<<"$VERSIONS"
 
       - name: Validate poetry came from the pipx backend
         shell: bash
@@ -40,6 +52,93 @@ jobs:
           mise --version
           shellcheck --version
           shellcheck scripts/*.sh
+
+  contract:
+    runs-on: sonar-xs
+    name: Upstream contract
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install yq using mise wrapper
+        uses: ./
+        with:
+          install_args: yq
+
+      - name: Test the contract check
+        working-directory: scripts
+        run: python3 -m unittest -v test_check_upstream_contract
+
+      - name: Check action.yaml against the pinned step-security/mise-action
+        run: python3 scripts/check_upstream_contract.py
+
+  version-input:
+    runs-on: sonar-xs
+    name: Version input
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Install tools using mise wrapper with an older mise
+        uses: ./
+        with:
+          version: 2026.8.10
+          install_args: yq
+
+      - name: Validate the requested mise version is installed
+        run: test "$(mise --version | awk '{print $1}')" = "2026.8.10"
+
+  # Each step must fail in the input check. The job can reach Vault, so a step
+  # that is not rejected succeeds and the assertion after it fails.
+  rejected-inputs:
+    runs-on: sonar-xs
+    name: Rejected inputs
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Removed input name
+        id: renamed
+        continue-on-error: true
+        uses: ./
+        with:
+          mise-version: 2026.8.15
+          install: false
+
+      - name: Disabled cache
+        id: cache
+        continue-on-error: true
+        uses: ./
+        with:
+          cache: false
+          install: false
+
+      - name: Unsupported input
+        id: unsupported
+        continue-on-error: true
+        uses: ./
+        with:
+          auto_update: true
+          install: false
+
+      - name: Validate every step was rejected
+        env:
+          RENAMED: ${{ steps.renamed.outcome }}
+          CACHE: ${{ steps.cache.outcome }}
+          UNSUPPORTED: ${{ steps.unsupported.outcome }}
+        run: |
+          test "$RENAMED" = failure
+          test "$CACHE" = failure
+          test "$UNSUPPORTED" = failure
 
   # Dogfood the composite action on Windows. github.action_path uses backslashes
   # there, and interpolating it into a bash run: line fails.

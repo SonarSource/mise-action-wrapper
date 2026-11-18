@@ -8,69 +8,200 @@ branding:
   color: green
   icon: package
 inputs:
-  cache-key-prefix:
-    description: Prefix for the cache key. Use different prefixes when multiple workflows install different tool sets to avoid cache collisions.
+  add_shims_to_path:
+    description: "if false, will not add mise shims directory to PATH"
     required: false
-    default: mise
-  mise-toml:
-    description: If present, this value will be written to (and will override) the mise.toml file before mise runs
+    default: "true"
+  bootstrap:
+    description: "if true, will run `mise bootstrap` instead of `mise install`"
     required: false
-  mise-version:
-    description: The version of mise to install.
+    default: "false"
+  bootstrap_args:
+    description: "Additional arguments to pass to `mise bootstrap`."
     required: false
-    default: '2026.8.15'
-  repox-url:
-    description: URL for Repox
+  bootstrap_skip:
+    description: "Comma-separated bootstrap parts to skip, such as \"tools,task\". Passed as `mise bootstrap --skip`."
     required: false
-    default: https://repox.jfrog.io
-  artifactory-reader-role:
-    description: Suffix for the Artifactory reader role in Vault. Defaults to public-reader for public repositories and private-reader for private repositories.
+  env:
+    description: "Automatically load mise environment variables for subsequent steps."
     required: false
-    default: ''
-  vault-url:
-    description: URL of Vault used to fetch Artifactory credentials
+    default: "true"
+  experimental:
+    description: "if true, will use experimental features"
     required: false
-    default: https://vault.sonar.build
+    default: "false"
+  export_path:
+    description: "Add PATH entries produced by mise, including [env] _.path, to subsequent steps through GITHUB_PATH."
+    required: false
+    default: "true"
+  fetch_from_github:
+    description: "If true (default), fetch the mise binary from GitHub. If false and using the latest version, fetch from mise.jdx.dev instead."
+    required: false
+    default: "true"
+  github_token:
+    description: "GitHub token for API authentication to avoid rate limits when installing GitHub-hosted tools. Defaults to the automatic GitHub token. Used only during this action unless persist_github_token is set."
+    required: false
+    default: '${{ github.token }}'
   install:
-    description: If false, will not run mise install
+    description: "if false, will not run `mise install` or `mise bootstrap`"
     required: false
-    default: 'true'
+    default: "true"
   install_args:
-    description: Arguments to pass to mise install, such as a tool name to install only that tool
+    description: "Arguments to pass to `mise install` such as \"bun\" to only install bun. When a repo mise lock file is present, the action automatically adds `--locked` unless you already provided it."
     required: false
-  working_directory:
-    description: The directory that mise runs in
+  log_level:
+    description: "The log level to use for the action"
+    required: false
+    default: "info"
+  minimum_release_age:
+    description: "When version is not specified, only install stable mise releases older than this threshold. Defaults to 24h; set 0s to disable the delay. Accepts relative durations such as 24h, 7d, 6mo, or 1y, and absolute ISO dates or timestamps."
+    required: false
+    default: "24h"
+  mise_toml:
+    description: "If present, this value will be written to the mise.toml file"
+    required: false
+  persist_github_token:
+    description: "If true, export MISE_GITHUB_TOKEN to later steps of the job so they can call the GitHub API authenticated."
+    required: false
+    default: "true"
+  plugins:
+    description: "Plugins to install before tools, one per line as `name` or `name url`, e.g. `yarn` or `php https://github.com/verzly/mise-php#latest`. Useful for idiomatic version files (such as .yvmrc) that need a plugin."
+    required: false
+    default: ""
+  reshim:
+    description: "if true, will run `mise reshim --all` after setting up mise"
+    required: false
+    default: "false"
+  sha256:
+    description: "The SHA256 checksum of the mise binary to verify the download."
     required: false
   tool_versions:
-    description: If present, this value will be written to the .tool-versions file
+    description: "If present, this value will be written to the .tool-versions file"
     required: false
-  reshim:
-    description: If true, will run mise reshim --all after setting up mise
+  version:
+    description: "The version of mise to install."
     required: false
-    default: 'false'
-  experimental:
-    description: If true, will use experimental mise features
+    default: "2026.8.15"
+  working_directory:
+    description: "The directory that mise runs in"
     required: false
-    default: 'false'
-  github_token:
-    description: GitHub token for API authentication when installing GitHub-hosted tools
+  cache:
+    description: "The wrapper always uses its S3 cache. Accepts true for compatibility; false fails the job."
     required: false
-    default: ${{ github.token }}
-  log_level:
-    description: The log level to use for mise
+    default: "true"
+  cache_key_prefix:
+    description: "Prefix for the S3 cache key. Use different prefixes when multiple jobs install different tool sets."
     required: false
-    default: info
-  persist_github_token:
-    description: If true, export MISE_GITHUB_TOKEN to later steps of the job so they can call the GitHub API authenticated
+    default: "mise"
+  artifactory_reader_role:
+    description: "Suffix of the Artifactory reader role in Vault. Defaults to public-reader for public repositories and private-reader for private repositories."
     required: false
-    default: 'true'
+    default: ""
+  repox_url:
+    description: "URL for Repox."
+    required: false
+    default: "https://repox.jfrog.io"
+  vault_url:
+    description: "URL of Vault used to fetch Artifactory credentials."
+    required: false
+    default: "https://vault.sonar.build"
+  auto_update:
+    description: "Not supported by the wrapper: The wrapper pins the mise version."
+    required: false
+  cache_key:
+    description: "Not supported by the wrapper: The wrapper builds its own S3 cache key; use cache_key_prefix."
+    required: false
+  cache_save:
+    description: "Not supported by the wrapper: The wrapper always saves its S3 cache."
+    required: false
+  cache_save_post:
+    description: "Not supported by the wrapper: The wrapper always saves its S3 cache in the post step."
+    required: false
+  install_dir:
+    description: "Not supported by the wrapper: Deprecated upstream."
+    required: false
+  mise_dir:
+    description: "Not supported by the wrapper: The wrapper's cache and integrity checks rely on the default mise directory."
+    required: false
+  wings_enabled:
+    description: "Not supported by the wrapper: Sends downloads through a third-party asset cache."
+    required: false
+  artifactory-reader-role:
+    description: "Removed in 2.0.0; use artifactory_reader_role."
+    required: false
+  cache-key-prefix:
+    description: "Removed in 2.0.0; use cache_key_prefix."
+    required: false
+  mise-toml:
+    description: "Removed in 2.0.0; use mise_toml."
+    required: false
+  mise-version:
+    description: "Removed in 2.0.0; use version."
+    required: false
+  repox-url:
+    description: "Removed in 2.0.0; use repox_url."
+    required: false
+  vault-url:
+    description: "Removed in 2.0.0; use vault_url."
+    required: false
+outputs:
+  cache-hit:
+    description: true when the S3 cache was restored from an exact key match.
+    value: ${{ steps.cache.outputs.cache-hit || 'false' }}
+  versions:
+    description: JSON object of the active, installed tool versions, keyed by tool name, as reported by step-security/mise-action.
+    value: ${{ steps.mise.outputs.versions }}
 runs:
   using: composite
   steps:
+    - name: Check inputs
+      shell: bash
+      env:
+        IN_CACHE: ${{ inputs.cache }}
+        IN_AUTO_UPDATE: ${{ inputs.auto_update }}
+        IN_CACHE_KEY: ${{ inputs.cache_key }}
+        IN_CACHE_SAVE: ${{ inputs.cache_save }}
+        IN_CACHE_SAVE_POST: ${{ inputs.cache_save_post }}
+        IN_INSTALL_DIR: ${{ inputs.install_dir }}
+        IN_MISE_DIR: ${{ inputs.mise_dir }}
+        IN_WINGS_ENABLED: ${{ inputs.wings_enabled }}
+        IN_ARTIFACTORY_READER_ROLE: ${{ inputs.artifactory-reader-role }}
+        IN_CACHE_KEY_PREFIX: ${{ inputs.cache-key-prefix }}
+        IN_MISE_TOML: ${{ inputs.mise-toml }}
+        IN_MISE_VERSION: ${{ inputs.mise-version }}
+        IN_REPOX_URL: ${{ inputs.repox-url }}
+        IN_VAULT_URL: ${{ inputs.vault-url }}
+      run: |
+        failed=0
+        reject() {
+          if [[ -n "$2" ]]; then
+            echo "::error title=mise-action-wrapper::Input $1 $3"
+            failed=1
+          fi
+        }
+        if [[ "$IN_CACHE" != "true" ]]; then
+          echo "::error title=mise-action-wrapper::Input cache must be true: this action exists for its S3 cache. Use step-security/mise-action directly for an uncached install."
+          failed=1
+        fi
+        reject auto_update "$IN_AUTO_UPDATE" "is not supported: the wrapper pins the mise version."
+        reject cache_key "$IN_CACHE_KEY" "is not supported: the wrapper builds its own S3 cache key; use cache_key_prefix."
+        reject cache_save "$IN_CACHE_SAVE" "is not supported: the wrapper always saves its S3 cache."
+        reject cache_save_post "$IN_CACHE_SAVE_POST" "is not supported: the wrapper always saves its S3 cache in the post step."
+        reject install_dir "$IN_INSTALL_DIR" "is not supported: deprecated upstream."
+        reject mise_dir "$IN_MISE_DIR" "is not supported: the wrapper's cache and integrity checks rely on the default mise directory."
+        reject wings_enabled "$IN_WINGS_ENABLED" "is not supported: sends downloads through a third-party asset cache."
+        reject artifactory-reader-role "$IN_ARTIFACTORY_READER_ROLE" "was renamed to artifactory_reader_role in 2.0.0."
+        reject cache-key-prefix "$IN_CACHE_KEY_PREFIX" "was renamed to cache_key_prefix in 2.0.0."
+        reject mise-toml "$IN_MISE_TOML" "was renamed to mise_toml in 2.0.0."
+        reject mise-version "$IN_MISE_VERSION" "was renamed to version in 2.0.0."
+        reject repox-url "$IN_REPOX_URL" "was renamed to repox_url in 2.0.0."
+        reject vault-url "$IN_VAULT_URL" "was renamed to vault_url in 2.0.0."
+        exit "$failed"
+
     - name: Set Artifactory reader role
       shell: bash
       env:
-        INPUT_ROLE: ${{ inputs.artifactory-reader-role }}
+        INPUT_ROLE: ${{ inputs.artifactory_reader_role }}
       run: |
         if [[ -n "$INPUT_ROLE" ]]; then
           echo "ARTIFACTORY_READER_ROLE=$INPUT_ROLE" >> "$GITHUB_ENV"
@@ -84,7 +215,7 @@ runs:
       id: secrets
       uses: SonarSource/vault-action-wrapper@v3
       with:
-        url: ${{ inputs.vault-url }}
+        url: ${{ inputs.vault_url }}
         secrets: |
           development/artifactory/token/{REPO_OWNER_NAME_DASH}-${{ env.ARTIFACTORY_READER_ROLE }} username | ARTIFACTORY_USERNAME;
           development/artifactory/token/{REPO_OWNER_NAME_DASH}-${{ env.ARTIFACTORY_READER_ROLE }} access_token | ARTIFACTORY_ACCESS_TOKEN;
@@ -92,7 +223,7 @@ runs:
     - name: Configure Repox for mise
       shell: bash
       env:
-        ARTIFACTORY_URL: ${{ format('{0}/artifactory', inputs.repox-url) }}
+        ARTIFACTORY_URL: ${{ format('{0}/artifactory', inputs.repox_url) }}
         ARTIFACTORY_USERNAME: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_USERNAME }}
         ARTIFACTORY_ACCESS_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_ACCESS_TOKEN }}
       run: |
@@ -107,13 +238,20 @@ runs:
       id: mise-config
       shell: bash
       env:
-        MISE_TOML_INPUT: ${{ inputs.mise-toml }}
+        MISE_TOML_INPUT: ${{ inputs.mise_toml }}
         TOOL_VERSIONS_INPUT: ${{ inputs.tool_versions }}
         WORKDIR: ${{ inputs.working_directory }}
+        INSTALL_INPUTS: |
+          ${{ inputs.install }}
+          ${{ inputs.install_args }}
+          ${{ inputs.plugins }}
+          ${{ inputs.bootstrap }}
+          ${{ inputs.bootstrap_skip }}
+          ${{ inputs.bootstrap_args }}
       run: |
         cd "${WORKDIR:-.}"
         digest=$( {
-          printf '%s\n%s\n' "$MISE_TOML_INPUT" "$TOOL_VERSIONS_INPUT"
+          printf '%s\n%s\n%s\n' "$MISE_TOML_INPUT" "$TOOL_VERSIONS_INPUT" "$INSTALL_INPUTS"
           cat mise.toml mise.lock mise.local.toml .mise.toml .mise/config.toml \
               .config/mise/config.toml .tool-versions 2>/dev/null || true
         } | sha256sum | cut -d' ' -f1)
@@ -137,17 +275,18 @@ runs:
         echo "MISE_DATA_DIR=${dir}" >> "$GITHUB_ENV"
 
     - name: Restore mise tools cache
+      id: cache
       uses: SonarSource/gh-action_cache@v1
       with:
         path: ${{ steps.mise-dir.outputs.dir }}
-        key: ${{ inputs.cache-key-prefix }}-v2-${{ runner.os }}-${{ inputs.mise-version }}-${{ steps.mise-config.outputs.digest }}
+        key: ${{ inputs.cache_key_prefix }}-v2-${{ runner.os }}-${{ inputs.version }}-${{ steps.mise-config.outputs.digest }}
         restore-keys: |
-          ${{ inputs.cache-key-prefix }}-v2-${{ runner.os }}-${{ inputs.mise-version }}-
+          ${{ inputs.cache_key_prefix }}-v2-${{ runner.os }}-${{ inputs.version }}-
 
     - name: Validate mise cache integrity
       shell: bash
       env:
-        MISE_VERSION: ${{ inputs.mise-version }}
+        MISE_VERSION: ${{ inputs.version }}
       run: |
         MISE_HOME="${MISE_DATA_DIR//\\//}"
         if [[ "${RUNNER_OS}" == "Windows" ]]; then
@@ -173,17 +312,28 @@ runs:
         fi
 
     - name: Install mise tools
+      id: mise
       uses: step-security/mise-action@a225bbd7c202ddf57dd76dff22bb7992f6314173 # v5.1.2
       with:
-        version: ${{ inputs.mise-version }}
         cache: false
-        mise_toml: ${{ inputs.mise-toml }}
+        add_shims_to_path: ${{ inputs.add_shims_to_path }}
+        bootstrap: ${{ inputs.bootstrap }}
+        bootstrap_args: ${{ inputs.bootstrap_args }}
+        bootstrap_skip: ${{ inputs.bootstrap_skip }}
+        env: ${{ inputs.env }}
+        experimental: ${{ inputs.experimental }}
+        export_path: ${{ inputs.export_path }}
+        fetch_from_github: ${{ inputs.fetch_from_github }}
+        github_token: ${{ inputs.github_token }}
         install: ${{ inputs.install }}
         install_args: ${{ inputs.install_args }}
-        working_directory: ${{ inputs.working_directory }}
-        tool_versions: ${{ inputs.tool_versions }}
-        reshim: ${{ inputs.reshim }}
-        experimental: ${{ inputs.experimental }}
-        github_token: ${{ inputs.github_token }}
         log_level: ${{ inputs.log_level }}
+        minimum_release_age: ${{ inputs.minimum_release_age }}
+        mise_toml: ${{ inputs.mise_toml }}
         persist_github_token: ${{ inputs.persist_github_token }}
+        plugins: ${{ inputs.plugins }}
+        reshim: ${{ inputs.reshim }}
+        sha256: ${{ inputs.sha256 }}
+        tool_versions: ${{ inputs.tool_versions }}
+        version: ${{ inputs.version }}
+        working_directory: ${{ inputs.working_directory }}

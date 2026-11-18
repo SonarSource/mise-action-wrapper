@@ -1,0 +1,63 @@
+# How the wrapper treats every input of the pinned step-security/mise-action.
+# scripts/check_upstream_contract.py fails CI when this file, action.yaml and
+# the pinned upstream action.yml disagree, for example after a version bump.
+---
+# Declared by the wrapper with the same name and passed through unchanged.
+forwarded:
+  - add_shims_to_path
+  - bootstrap
+  - bootstrap_args
+  - bootstrap_skip
+  - env
+  - experimental
+  - export_path
+  - fetch_from_github
+  - github_token
+  - install
+  - install_args
+  - log_level
+  - minimum_release_age
+  - mise_toml
+  - persist_github_token
+  - plugins
+  - reshim
+  - sha256
+  - tool_versions
+  - version
+  - working_directory
+
+# Forwarded inputs whose wrapper default differs from the upstream default.
+default_overrides:
+  version: Pinned so every job runs a known mise release; Renovate bumps it.
+  persist_github_token: Keeps MISE_GITHUB_TOKEN available to later steps, as in mise-action v2 to v5.1.0.
+
+# Declared by the wrapper with the same name and implemented by the wrapper itself.
+handled:
+  cache: The wrapper's S3 cache is always on; false fails the job. Upstream caching is always disabled.
+  cache_key_prefix: Prefix of the wrapper's S3 cache key.
+
+# Declared by the wrapper only to fail the job with an explanation when set.
+unsupported:
+  auto_update: The wrapper pins the mise version.
+  cache_key: The wrapper builds its own S3 cache key; use cache_key_prefix.
+  cache_save: The wrapper always saves its S3 cache.
+  cache_save_post: The wrapper always saves its S3 cache in the post step.
+  install_dir: Deprecated upstream.
+  mise_dir: The wrapper's cache and integrity checks rely on the default mise directory.
+  wings_enabled: Sends downloads through a third-party asset cache.
+
+# Wrapper inputs with no upstream counterpart.
+wrapper:
+  - artifactory_reader_role
+  - repox_url
+  - vault_url
+
+# Input names removed in 2.0.0. Declared only to fail the job with the new name,
+# because GitHub otherwise ignores unknown inputs with a warning.
+renamed:
+  artifactory-reader-role: artifactory_reader_role
+  cache-key-prefix: cache_key_prefix
+  mise-toml: mise_toml
+  mise-version: version
+  repox-url: repox_url
+  vault-url: vault_url

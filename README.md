@@ -13,49 +13,91 @@ This wrapper centralises:
 
 ## Usage
 
-Replace a direct mise-action install for typical install-from-config jobs:
-
 ```yaml
 - name: Install tools using mise
-  uses: SonarSource/mise-action-wrapper@v1
+  uses: SonarSource/mise-action-wrapper@v2
 ```
 
-With a custom cache prefix when multiple jobs install different tool sets:
+Inputs use the same names as [`step-security/mise-action`](https://github.com/step-security/mise-action), so a
+`with:` block written for it works here, apart from the inputs listed under [Not supported](#not-supported).
 
-```yaml
-- name: Install tools using mise
-  uses: SonarSource/mise-action-wrapper@v1
-  with:
-    cache-key-prefix: mise-qa
-```
-
-Caching is handled by this wrapper (`cache: false` is always passed through to `step-security/mise-action`).
-The cache key includes a version segment (bumped when cache semantics change) so prefix `restore-keys` cannot revive older entries.
+The point of this wrapper is its S3 cache, keyed on the runner OS, the mise version, the mise configuration files,
+`mise_toml`, `tool_versions`, `install`, `install_args`, `plugins` and the `bootstrap*` inputs. Jobs that install
+different tool sets from the same configuration get different keys without setting `cache_key_prefix`.
 Restore keys never cross mise versions: tools installed by another mise version can be listed as installed
-while their binaries are missing from `PATH`.
-Forwarded `step-security/mise-action` inputs: `install`,
-`install_args`, `working_directory`, `tool_versions`, `reshim`, `experimental`, `github_token`, `log_level`,
-`persist_github_token`, and `mise_toml` (as `mise-toml`).
+while their binaries are missing from `PATH`. `step-security/mise-action` is always called with `cache: false`.
 
 ## Inputs
 
+### Same as step-security/mise-action
+
+Passed through unchanged, with the upstream default: `add_shims_to_path`, `bootstrap`, `bootstrap_args`,
+`bootstrap_skip`, `env`, `experimental`, `export_path`, `fetch_from_github`, `github_token`, `install`,
+`install_args`, `log_level`, `minimum_release_age`, `mise_toml`, `plugins`, `reshim`, `sha256`, `tool_versions`,
+`working_directory`.
+
+Passed through with a different default:
+
+| Input | Default | Why |
+|-------|---------|-----|
+| `persist_github_token` | `true` | Keeps MISE_GITHUB_TOKEN available to later steps, as in mise-action v2 to v5.1.0. |
+| `version` | `2026.8.15` | Pinned so every job runs a known mise release; Renovate bumps it. |
+
+### Implemented by the wrapper
+
 | Input | Default | Description |
 |-------|---------|-------------|
-| `cache-key-prefix` | `mise` | Prefix for the S3/GitHub cache key |
-| `mise-toml` | _(empty)_ | Optional `mise.toml` content written before install |
-| `mise-version` | `2026.8.15` | Pinned mise version installed by the wrapper |
-| `repox-url` | `https://repox.jfrog.io` | Repox base URL |
-| `artifactory-reader-role` | _(auto)_ | Vault Artifactory role suffix (`public-reader` / `private-reader`) |
-| `vault-url` | `https://vault.sonar.build` | Vault URL for credential fetch |
-| `install` | `true` | If `false`, skip `mise install` |
-| `install_args` | _(empty)_ | Arguments passed to `mise install` |
-| `working_directory` | _(empty)_ | Directory that mise runs in |
-| `tool_versions` | _(empty)_ | Optional `.tool-versions` content written before install |
-| `reshim` | `false` | If `true`, run `mise reshim --all` after setup |
-| `experimental` | `false` | Enable experimental mise features |
-| `github_token` | `${{ github.token }}` | Token for GitHub-hosted tool downloads |
-| `log_level` | `info` | mise log level |
-| `persist_github_token` | `true` | Export `MISE_GITHUB_TOKEN` to later steps of the job |
+| `cache` | `true` | The S3 cache is always on. `false` fails the job; use `step-security/mise-action` directly for an uncached install |
+| `cache_key_prefix` | `mise` | Prefix of the S3 cache key |
+| `artifactory_reader_role` | _(auto)_ | Vault Artifactory role suffix (`public-reader` / `private-reader`) |
+| `repox_url` | `https://repox.jfrog.io` | Repox base URL |
+| `vault_url` | `https://vault.sonar.build` | Vault URL for credential fetch |
+
+### Not supported
+
+Setting any of these fails the job with the reason:
+
+| Input | Reason |
+|-------|--------|
+| `auto_update` | The wrapper pins the mise version. |
+| `cache_key` | The wrapper builds its own S3 cache key; use cache_key_prefix. |
+| `cache_save` | The wrapper always saves its S3 cache. |
+| `cache_save_post` | The wrapper always saves its S3 cache in the post step. |
+| `install_dir` | Deprecated upstream. |
+| `mise_dir` | The wrapper's cache and integrity checks rely on the default mise directory. |
+| `wings_enabled` | Sends downloads through a third-party asset cache. |
+
+## Outputs
+
+| Output | Description |
+|--------|-------------|
+| `cache-hit` | `true` when the S3 cache was restored from an exact key match |
+| `versions` | JSON object of the installed tool versions, as reported by `step-security/mise-action` |
+
+## Upgrading from v1
+
+2.0.0 renames the inputs that differed from `step-security/mise-action`. The old names fail the job with the new name,
+instead of being ignored with a warning.
+
+| v1 | v2 |
+|----|----|
+| `artifactory-reader-role` | `artifactory_reader_role` |
+| `cache-key-prefix` | `cache_key_prefix` |
+| `mise-toml` | `mise_toml` |
+| `mise-version` | `version` |
+| `repox-url` | `repox_url` |
+| `vault-url` | `vault_url` |
+
+The cache key now also covers `install`, `install_args`, `plugins` and the `bootstrap*` inputs, so expect one cache miss
+per job after upgrading.
+
+## Staying aligned with step-security/mise-action
+
+[`upstream-inputs.yaml`](upstream-inputs.yaml) classifies every input of the pinned `step-security/mise-action`.
+CI runs [`scripts/check_upstream_contract.py`](scripts/check_upstream_contract.py), which fails when an upstream input
+is added, removed or changes its default, when a forwarded input is not passed through, or when an input is declared
+but unused. When a Renovate update of the pinned action fails this check, classify the new inputs in
+`upstream-inputs.yaml` and update `action.yaml`.
 
 ## Repox behaviour
 
