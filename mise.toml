@@ -8,3 +8,4 @@ lockfile = true
 # Dogfood MISE_BACKENDS_POETRY: the `poetry` short name must resolve to pipx, not vfox.
 python = "3.13"
 poetry = "2.2.1"
+yq = "4.54.3"
