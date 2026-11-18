@@ -77,7 +77,7 @@ inputs:
   version:
     description: "The version of mise to install."
     required: false
-    default: "2026.8.15"
+    default: "2026.11.7"
   working_directory:
     description: "The directory that mise runs in"
     required: false
