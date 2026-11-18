@@ -33,7 +33,7 @@ while their binaries are missing from `PATH`. `step-security/mise-action` is alw
 
 Passed through unchanged, with the upstream default: `add_shims_to_path`, `bootstrap`, `bootstrap_args`,
 `bootstrap_skip`, `env`, `experimental`, `export_path`, `fetch_from_github`, `github_token`, `install`,
-`install_args`, `log_level`, `minimum_release_age`, `mise_toml`, `plugins`, `reshim`, `sha256`, `tool_versions`,
+`install_args`, `log_level`, `mise_toml`, `plugins`, `reshim`, `sha256`, `tool_versions`,
 `working_directory`.
 
 Passed through with a different default:
@@ -64,6 +64,7 @@ Setting any of these fails the job with the reason:
 | `cache_save` | The wrapper always saves its S3 cache. |
 | `cache_save_post` | The wrapper always saves its S3 cache in the post step. |
 | `install_dir` | Deprecated upstream. |
+| `minimum_release_age` | The wrapper pins the mise version, so upstream ignores it. |
 | `mise_dir` | The wrapper's cache and integrity checks rely on the default mise directory. |
 | `wings_enabled` | Sends downloads through a third-party asset cache. |
 
@@ -87,6 +88,9 @@ instead of being ignored with a warning.
 | `mise-version` | `version` |
 | `repox-url` | `repox_url` |
 | `vault-url` | `vault_url` |
+
+[`SonarSource/renovate-config`](https://github.com/SonarSource/renovate-config) bumps the pinned `version:` of
+v2 callers as it bumped `mise-version:` for v1 callers.
 
 The cache key now also covers `install`, `install_args`, `plugins` and the `bootstrap*` inputs, so expect one cache miss
 per job after upgrading.

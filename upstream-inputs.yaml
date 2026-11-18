@@ -16,7 +16,6 @@ forwarded:
   - install
   - install_args
   - log_level
-  - minimum_release_age
   - mise_toml
   - persist_github_token
   - plugins
@@ -43,6 +42,7 @@ unsupported:
   cache_save: The wrapper always saves its S3 cache.
   cache_save_post: The wrapper always saves its S3 cache in the post step.
   install_dir: Deprecated upstream.
+  minimum_release_age: The wrapper pins the mise version, so upstream ignores it.
   mise_dir: The wrapper's cache and integrity checks rely on the default mise directory.
   wings_enabled: Sends downloads through a third-party asset cache.
 

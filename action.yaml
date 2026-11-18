@@ -53,10 +53,6 @@ inputs:
     description: "The log level to use for the action"
     required: false
     default: "info"
-  minimum_release_age:
-    description: "When version is not specified, only install stable mise releases older than this threshold. Defaults to 24h; set 0s to disable the delay. Accepts relative durations such as 24h, 7d, 6mo, or 1y, and absolute ISO dates or timestamps."
-    required: false
-    default: "24h"
   mise_toml:
     description: "If present, this value will be written to the mise.toml file"
     required: false
@@ -120,6 +116,9 @@ inputs:
   install_dir:
     description: "Not supported by the wrapper: Deprecated upstream."
     required: false
+  minimum_release_age:
+    description: "Not supported by the wrapper: The wrapper pins the mise version, so upstream ignores it."
+    required: false
   mise_dir:
     description: "Not supported by the wrapper: The wrapper's cache and integrity checks rely on the default mise directory."
     required: false
@@ -163,6 +162,7 @@ runs:
         IN_CACHE_SAVE: ${{ inputs.cache_save }}
         IN_CACHE_SAVE_POST: ${{ inputs.cache_save_post }}
         IN_INSTALL_DIR: ${{ inputs.install_dir }}
+        IN_MINIMUM_RELEASE_AGE: ${{ inputs.minimum_release_age }}
         IN_MISE_DIR: ${{ inputs.mise_dir }}
         IN_WINGS_ENABLED: ${{ inputs.wings_enabled }}
         IN_ARTIFACTORY_READER_ROLE: ${{ inputs.artifactory-reader-role }}
@@ -188,6 +188,7 @@ runs:
         reject cache_save "$IN_CACHE_SAVE" "is not supported: the wrapper always saves its S3 cache."
         reject cache_save_post "$IN_CACHE_SAVE_POST" "is not supported: the wrapper always saves its S3 cache in the post step."
         reject install_dir "$IN_INSTALL_DIR" "is not supported: deprecated upstream."
+        reject minimum_release_age "$IN_MINIMUM_RELEASE_AGE" "is not supported: the wrapper pins the mise version, so upstream ignores it."
         reject mise_dir "$IN_MISE_DIR" "is not supported: the wrapper's cache and integrity checks rely on the default mise directory."
         reject wings_enabled "$IN_WINGS_ENABLED" "is not supported: sends downloads through a third-party asset cache."
         reject artifactory-reader-role "$IN_ARTIFACTORY_READER_ROLE" "was renamed to artifactory_reader_role in 2.0.0."
@@ -328,7 +329,6 @@ runs:
         install: ${{ inputs.install }}
         install_args: ${{ inputs.install_args }}
         log_level: ${{ inputs.log_level }}
-        minimum_release_age: ${{ inputs.minimum_release_age }}
         mise_toml: ${{ inputs.mise_toml }}
         persist_github_token: ${{ inputs.persist_github_token }}
         plugins: ${{ inputs.plugins }}
