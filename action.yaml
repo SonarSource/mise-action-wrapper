@@ -224,8 +224,8 @@ runs:
       shell: bash
       env:
         ARTIFACTORY_URL: ${{ format('{0}/artifactory', inputs.repox_url) }}
-        ARTIFACTORY_USERNAME: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_USERNAME }}
-        ARTIFACTORY_ACCESS_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).ARTIFACTORY_ACCESS_TOKEN }}
+        ARTIFACTORY_USERNAME: ${{ fromJSON(steps.secrets.outputs.vault || '{}').ARTIFACTORY_USERNAME }}
+        ARTIFACTORY_ACCESS_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault || '{}').ARTIFACTORY_ACCESS_TOKEN }}
       run: |
         echo "GITHUB_ACTION_PATH=$GITHUB_ACTION_PATH"
         echo "github.action_path=${{ github.action_path }}"
