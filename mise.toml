@@ -4,8 +4,8 @@ lockfile = true
 # Dogfood: pipx:shellcheck-py is a PyPI package so CI exercises mise install through Repox.
 # aqua/github/asdf ShellCheck would skip that path.
 [tools]
-"pipx:shellcheck-py" = "0.10.0.1"
+"pipx:shellcheck-py" = "0.11.0.1"
 # Dogfood MISE_BACKENDS_POETRY: the `poetry` short name must resolve to pipx, not vfox.
 python = "3.13"
-poetry = "2.2.1"
+poetry = "2.5.1"
 yq = "4.54.3"
