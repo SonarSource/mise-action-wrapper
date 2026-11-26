@@ -41,7 +41,7 @@ Passed through with a different default:
 | Input | Default | Why |
 |-------|---------|-----|
 | `persist_github_token` | `true` | Keeps MISE_GITHUB_TOKEN available to later steps, as in mise-action v2 to v5.1.0. |
-| `version` | `2026.11.7` | Pinned so every job runs a known mise release; Renovate bumps it. |
+| `version` | `2026.11.12` | Pinned so every job runs a known mise release; Renovate bumps it. |
 
 ### Implemented by the wrapper
 
